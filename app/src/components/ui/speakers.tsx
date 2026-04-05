@@ -7,7 +7,7 @@ const speakers = [
     role: 'Учредитель компаний KIBERone и «Этажи» в Калининграде и области',
     topic: 'Почему школьного образования уже недостаточно: какие навыки нужны детям в мире быстрых изменений',
     photo: '/speakers/ekaterina.jpg',
-    imageStyle: 'object-contain',
+    imageStyle: 'object-cover object-top',
   },
   {
     name: 'Владимир Лемешевский',
