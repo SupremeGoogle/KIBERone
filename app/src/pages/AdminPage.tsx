@@ -11,6 +11,7 @@ interface Registration {
   consent: boolean
   createdAt: string
   checkedIn?: boolean
+  checkedInAt?: string // Время прихода
 }
 
 export default function AdminPage() {
@@ -48,13 +49,22 @@ export default function AdminPage() {
   }
 
   function toggleCheckIn(id: string) {
-    const updated = registrations.map(r => 
-      r.id === id ? { ...r, checkedIn: !r.checkedIn } : r
-    )
+    const now = new Date().toISOString()
+    const updated = registrations.map(r => {
+      if (r.id === id) {
+        const nextState = !r.checkedIn
+        return { 
+          ...r, 
+          checkedIn: nextState,
+          checkedInAt: nextState ? now : undefined 
+        }
+      }
+      return r
+    })
     localStorage.setItem('registrations', JSON.stringify(updated))
     setRegistrations(updated)
     if (selectedReg?.id === id) {
-      setSelectedReg(prev => prev ? { ...prev, checkedIn: !prev.checkedIn } : null)
+      setSelectedReg(prev => prev ? { ...prev, checkedIn: !prev.checkedIn, checkedInAt: !prev.checkedIn ? now : undefined } : null)
     }
   }
 
@@ -104,10 +114,12 @@ export default function AdminPage() {
   }
 
   function exportCSV() {
-    const headers = ['ФИО родителя', 'Имя ребёнка', 'Возраст', 'Телефон', 'Email', 'Дата регистрации']
+    const headers = ['ФИО родителя', 'Имя ребёнка', 'Возраст', 'Телефон', 'Email', 'Дата регистрации', 'Статус', 'Время прихода']
     const rows = filtered.map(r => [
       r.parentName, r.childName, r.childAge, r.phone, r.email,
-      new Date(r.createdAt).toLocaleString('ru-RU')
+      new Date(r.createdAt).toLocaleString('ru-RU'),
+      r.checkedIn ? 'ПРИШЁЛ' : 'ОЖИДАЕТСЯ',
+      r.checkedInAt ? new Date(r.checkedInAt).toLocaleTimeString('ru-RU') : '-'
     ])
     const csv = [headers, ...rows].map(row => row.map(c => `"${c}"`).join(',')).join('\n')
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -258,9 +270,16 @@ export default function AdminPage() {
                         <p className="text-gray-700 text-sm">{reg.childName}, {reg.childAge} лет</p>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${reg.checkedIn ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-400 border border-gray-200'}`}>
-                          {reg.checkedIn ? 'Пришёл' : 'Ожидается'}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider w-fit ${reg.checkedIn ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-400 border border-gray-200'}`}>
+                            {reg.checkedIn ? 'Пришёл' : 'Ожидается'}
+                          </span>
+                          {reg.checkedInAt && (
+                            <span className="text-[10px] text-gray-400 mt-1 font-bold">
+                              🕒 {new Date(reg.checkedInAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-gray-600 text-sm font-mono">{reg.phone}</p>
@@ -298,10 +317,16 @@ export default function AdminPage() {
                   <div className="space-y-1 text-sm">
                     <p className="text-gray-600">👧 {reg.childName}, {reg.childAge} лет</p>
                     <p className="text-gray-600">📱 {reg.phone}</p>
-                    <p className="text-gray-600">✉️ {reg.email}</p>
-                    <p className="text-gray-400 text-xs mt-2">
-                      {new Date(reg.createdAt).toLocaleString('ru-RU')}
-                    </p>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+                      <p className="text-gray-400 text-xs">
+                        {new Date(reg.createdAt).toLocaleDateString('ru-RU')}
+                      </p>
+                      {reg.checkedIn && (
+                        <span className="text-[10px] font-black text-green-600 bg-green-50 px-2 py-1 rounded-lg border border-green-100 uppercase">
+                          ✅ Пришёл {reg.checkedInAt && new Date(reg.checkedInAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
