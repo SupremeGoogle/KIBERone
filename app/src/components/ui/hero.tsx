@@ -45,28 +45,30 @@ export function HeroSection() {
           initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+          className="flex flex-col items-center px-2"
           style={{
             fontFamily: "'Geist', sans-serif",
             fontWeight: 500,
             letterSpacing: '-0.04em',
-            fontSize: 'clamp(40px, 6vw, 80px)',
-            lineHeight: 1.08,
+            fontSize: 'clamp(28px, 4.5vw, 60px)',
+            lineHeight: 1.05,
             color: '#000',
             margin: 0,
           }}
         >
-          Родитель <br />
+          Городское родительское собрание: <br />
           <span
             style={{
               fontFamily: "'Instrument Serif', serif",
               fontStyle: 'italic',
               fontWeight: 400,
-              fontSize: 'clamp(50px, 7.5vw, 100px)',
-              lineHeight: 0.95,
-              color: '#eab308' // Yellow color for emphasis
+              fontSize: 'clamp(44px, 7.5vw, 110px)',
+              lineHeight: 0.9,
+              color: '#eab308',
+              marginTop: '4px'
             }}
           >
-            Навигатор
+            «Родитель навигатор»
           </span>
         </motion.h1>
 

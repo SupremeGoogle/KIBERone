@@ -283,6 +283,9 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ============ SPEAKERS ============ */}
+      <SpeakersHorizontalScroll />
+
       {/* ============ TOPICS ============ */}
       <section ref={topicsSection.ref} className="py-16 md:py-28 bg-[#FAFBFF]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -313,9 +316,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* ============ SPEAKERS ============ */}
-      <SpeakersHorizontalScroll />
 
       {/* ============ FOR WHOM ============ */}
       <section ref={audienceSection.ref} className="py-20 md:py-28 bg-white">
