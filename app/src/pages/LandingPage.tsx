@@ -16,6 +16,7 @@ interface Registration {
   email: string
   consent: boolean
   createdAt: string
+  status?: 'ticket' | 'waitlist'
 }
 
 // ============== Phone Validation ==============
@@ -146,10 +147,16 @@ export default function LandingPage() {
     }
 
     const registrations: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]')
+    
+    // Check for limit - only count those who have 'ticket' status or no status (old ones)
+    const ticketCount = registrations.filter(r => r.status !== 'waitlist').length
+    const isWaitlist = ticketCount >= 100
+
     const newReg: Registration = {
       id: generateShortId(),
       ...formData,
       createdAt: new Date().toISOString(),
+      status: isWaitlist ? 'waitlist' : 'ticket',
     }
     
     // EmailJS Integration with PDF & QR Link
@@ -397,65 +404,86 @@ export default function LandingPage() {
                   <div className="w-16 h-16 md:w-20 md:h-20 bg-yellow-400 border-2 border-black rounded-full flex items-center justify-center mx-auto mb-6">
                     <svg className="w-8 h-8 md:w-10 md:h-10 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                   </div>
-                  <h3 className="text-xl md:text-2xl font-black text-black mb-2">Вы успешно зарегистрированы!</h3>
-                  <p className="text-gray-500 font-medium text-sm md:text-base mb-8">Сделайте скриншот или сохраните этот билет.</p>
                   
-                  {/* TICKET UI */}
-                  <div ref={ticketRef} className="w-full max-w-sm bg-yellow-400 border-2 border-black rounded-[2rem] p-6 mb-6 relative shadow-[6px_6px_0px_#000]">
-                    {/* Ticket perforations */}
-                    <div className="absolute left-[-10px] top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-r-2 border-black rounded-full"></div>
-                    <div className="absolute right-[-10px] top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-l-2 border-black rounded-full"></div>
-                    
-                    <h4 className="text-2xl font-black text-black font-['Instrument_Serif'] italic mb-1">Родитель Навигатор</h4>
-                    <p className="text-black font-bold uppercase text-xs tracking-widest border-b-2 border-black/20 pb-4 mb-4">Входной билет</p>
-                    
-                    <div className="bg-white p-4 rounded-2xl border-2 border-black flex justify-center mb-4 overflow-hidden">
-                      <a 
-                        href={`https://kaliningrad.kiber-one.com/admin?ticket=${submitted.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block hover:scale-105 transition-transform"
-                      >
-                        <QRCodeSVG 
-                          value={`https://kaliningrad.kiber-one.com/admin?ticket=${submitted.id}`}
-                          size={160} 
-                          bgColor={"#ffffff"}
-                          fgColor={"#000000"}
-                          level={"H"}
-                        />
-                      </a>
+                  {submitted.status === 'waitlist' ? (
+                    <div className="space-y-6">
+                      <h3 className="text-2xl md:text-3xl font-black text-black leading-tight">Спасибо за регистрацию!</h3>
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-3xl p-6 md:p-8 text-left relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+                        <p className="relative z-10 text-blue-900 font-bold text-lg md:text-xl leading-relaxed">
+                          К сожалению, все места уже заняты. Мы добавили вас в список ожидания и обязательно свяжемся, если освободится место.
+                        </p>
+                      </div>
+                      <p className="text-gray-400 font-medium max-w-sm mx-auto">
+                        Мы ценим ваш интерес и постараемся найти возможность пригласить вас.
+                      </p>
                     </div>
-                    
-                    <div className="text-left space-y-2">
-                      <div>
-                        <p className="text-xs font-bold text-black/60 uppercase">Участник</p>
-                        <p className="font-bold text-lg leading-none">{submitted.parentName}</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 border-t-2 border-black/20 pt-2 mt-2">
-                        <div>
-                          <p className="text-xs font-bold text-black/60 uppercase">Дата</p>
-                          <p className="font-bold">15 апреля</p>
+                  ) : (
+                    <>
+                      <h3 className="text-xl md:text-2xl font-black text-black mb-2">Вы успешно зарегистрированы!</h3>
+                      <p className="text-gray-500 font-medium text-sm md:text-base mb-8">Сделайте скриншот или сохраните этот билет.</p>
+                      
+                      {/* TICKET UI */}
+                      <div ref={ticketRef} className="w-full max-w-sm bg-yellow-400 border-2 border-black rounded-[2rem] p-6 mb-6 relative shadow-[6px_6px_0px_#000]">
+                        {/* Ticket perforations */}
+                        <div className="absolute left-[-10px] top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-r-2 border-black rounded-full"></div>
+                        <div className="absolute right-[-10px] top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-l-2 border-black rounded-full"></div>
+                        
+                        <h4 className="text-2xl font-black text-black font-['Instrument_Serif'] italic mb-1">Родитель Навигатор</h4>
+                        <p className="text-black font-bold uppercase text-xs tracking-widest border-b-2 border-black/20 pb-4 mb-4">Входной билет</p>
+                        
+                        <div className="bg-white p-4 rounded-2xl border-2 border-black flex justify-center mb-4 overflow-hidden">
+                          <a 
+                            href={`https://kaliningrad.kiber-one.com/admin?ticket=${submitted.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block hover:scale-105 transition-transform"
+                          >
+                            <QRCodeSVG 
+                              value={`https://kaliningrad.kiber-one.com/admin?ticket=${submitted.id}`}
+                              size={160} 
+                              bgColor={"#ffffff"}
+                              fgColor={"#000000"}
+                              level={"H"}
+                            />
+                          </a>
                         </div>
-                        <div>
-                          <p className="text-xs font-bold text-black/60 uppercase">Время</p>
-                          <p className="font-bold">18:00–20:00</p>
+                        
+                        <div className="text-left space-y-2">
+                          <div>
+                            <p className="text-xs font-bold text-black/60 uppercase">Участник</p>
+                            <p className="font-bold text-lg leading-none">{submitted.parentName}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 border-t-2 border-black/20 pt-2 mt-2">
+                            <div>
+                              <p className="text-xs font-bold text-black/60 uppercase">Дата</p>
+                              <p className="font-bold">15 апреля</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-black/60 uppercase">Время</p>
+                              <p className="font-bold">18:00–20:00</p>
+                            </div>
+                          </div>
+                          <div className="border-t-2 border-black/20 pt-2 mt-2">
+                            <p className="text-xs font-bold text-black/60 uppercase">Место</p>
+                            <p className="font-bold text-sm leading-snug">Конференц-зал БФУ им. И. Канта, Адм. корпус №1, ул. А. Невского, 14</p>
+                          </div>
                         </div>
                       </div>
-                      <div className="border-t-2 border-black/20 pt-2 mt-2">
-                        <p className="text-xs font-bold text-black/60 uppercase">Место</p>
-                        <p className="font-bold text-sm leading-snug">Конференц-зал БФУ им. И. Канта, Адм. корпус №1, ул. А. Невского, 14</p>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button 
-                      onClick={downloadTicket} 
-                      className="px-6 py-3 bg-black text-yellow-400 text-sm md:text-base font-bold rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      Скачать PDF
-                    </button>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button 
+                          onClick={downloadTicket} 
+                          className="px-6 py-3 bg-black text-yellow-400 text-sm md:text-base font-bold rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                          Скачать PDF
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="mt-8">
                     <button onClick={() => setSubmitted(null)} className="px-5 py-2 md:px-6 md:py-3 bg-gray-100 text-gray-500 text-sm md:text-base font-bold rounded-xl hover:bg-gray-200 transition-colors">
                       Записать ещё одного
                     </button>

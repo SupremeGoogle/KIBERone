@@ -97,36 +97,39 @@ export function SpeakersHorizontalScroll() {
   // Desktop Motion Version
   return (
     <section id="speakers" ref={targetRef} className="relative h-[400vh] bg-white">
-      <div className="sticky top-0 flex h-[100dvh] items-center overflow-hidden border-t-2 border-black">
+      <div className="sticky top-0 h-[100dvh] flex flex-col border-t-2 border-black overflow-hidden">
         
-        {/* Title */}
-        <div className="absolute top-24 left-0 w-full z-20 pointer-events-none px-20">
-          <span className="text-xs font-bold text-yellow-500 uppercase tracking-[0.2em] mb-1 block">Эксперты</span>
-          <h2 className="text-5xl lg:text-6xl font-black text-black leading-tight">
+        {/* Title Area - Fixed at top of sticky container */}
+        <div className="w-full pt-8 lg:pt-12 px-6 lg:px-20 shrink-0">
+          <span className="text-[10px] lg:text-xs font-bold text-yellow-500 uppercase tracking-[0.2em] mb-1 block">Эксперты</span>
+          <h2 className="text-3xl lg:text-5xl font-black text-black leading-tight">
             Те, кто создают <br />
-            <span className="font-['Instrument_Serif'] italic font-normal text-6xl lg:text-7xl text-yellow-500">будущее образования</span>
+            <span className="font-['Instrument_Serif'] italic font-normal text-4xl lg:text-6xl text-yellow-500">будущее образования</span>
           </h2>
         </div>
 
-        <motion.div style={{ x }} className="flex w-[400vw] h-full items-center">
-          {speakers.map((speaker, i) => (
-            <div key={i} className="w-screen h-full flex flex-col items-center justify-center px-20 pt-80 pb-4">
-              <div className="w-full max-w-[1300px] flex items-center gap-12 xl:gap-20 bg-white border-2 border-black rounded-[3.5rem] p-10 xl:p-14 shadow-[16px_16px_0px_#facc15] overflow-hidden">
-                <div className="relative w-[36%] h-[55vh] shrink-0 border-2 border-black rounded-[2.5rem] overflow-hidden bg-white">
-                  <img src={speaker.photo} alt={speaker.name} className={`w-full h-full ${speaker.imageStyle}`} style={{ transform: 'translateZ(0)' }} />
-                </div>
-                <div className="flex flex-col justify-center w-[64%]">
-                  <h3 className="font-black text-5xl lg:text-7xl text-black tracking-tighter mb-6">{speaker.name}</h3>
-                  <p className="text-gray-800 font-medium text-xl lg:text-2xl leading-relaxed mb-12 border-l-4 border-yellow-400 pl-8">{speaker.role}</p>
-                  <div className="bg-white rounded-[2rem] p-10 border-2 border-black shadow-[8px_8px_0px_#000]">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Тема выступления</p>
-                    <p className="text-black font-bold text-2xl lg:text-3xl leading-snug">«{speaker.topic}»</p>
+        {/* Cards Area - Centered in remaining space */}
+        <div className="flex-grow flex items-center overflow-hidden relative">
+          <motion.div style={{ x }} className="flex w-[400vw] h-full items-center">
+            {speakers.map((speaker, i) => (
+              <div key={i} className="w-screen flex items-center justify-center px-4 lg:px-20 h-fit">
+                <div className="w-full max-w-[1240px] flex items-center gap-6 xl:gap-16 bg-white border-2 border-black rounded-[2rem] lg:rounded-[3.5rem] p-6 lg:p-12 shadow-[12px_12px_0px_#facc15]">
+                  <div className="relative w-[34%] h-[42vh] lg:h-[50vh] max-h-[320px] lg:max-h-[500px] shrink-0 border-2 border-black rounded-[1.5rem] lg:rounded-[2.5rem] overflow-hidden bg-white">
+                    <img src={speaker.photo} alt={speaker.name} className={`w-full h-full ${speaker.imageStyle}`} style={{ transform: 'translateZ(0)' }} />
+                  </div>
+                  <div className="flex flex-col justify-center w-[66%]">
+                    <h3 className="font-black text-2xl lg:text-6xl text-black tracking-tighter mb-2 lg:mb-6">{speaker.name}</h3>
+                    <p className="text-gray-800 font-medium text-sm lg:text-xl leading-relaxed mb-4 lg:mb-10 border-l-4 border-yellow-400 pl-4 lg:pl-8">{speaker.role}</p>
+                    <div className="bg-white rounded-[1.2rem] lg:rounded-[2rem] p-5 lg:p-8 border-2 border-black shadow-[6px_6px_0px_#000]">
+                      <p className="text-[10px] lg:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 lg:mb-3">Тема выступления</p>
+                      <p className="text-black font-bold text-sm lg:text-2xl leading-snug">«{speaker.topic}»</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </motion.div>
+            ))}
+          </motion.div>
+        </div>
       </div>
     </section>
   )

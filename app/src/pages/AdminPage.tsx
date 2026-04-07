@@ -11,7 +11,8 @@ interface Registration {
   consent: boolean
   createdAt: string
   checkedIn?: boolean
-  checkedInAt?: string // Время прихода
+  checkedInAt?: string
+  status?: 'ticket' | 'waitlist'
 }
 
 export default function AdminPage() {
@@ -48,6 +49,18 @@ export default function AdminPage() {
     }
   }
 
+  const filtered = registrations
+    .filter(r =>
+      r.parentName.toLowerCase().includes(search.toLowerCase()) ||
+      r.childName.toLowerCase().includes(search.toLowerCase()) ||
+      r.phone.includes(search) ||
+      r.email.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy === 'date') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      return a.parentName.localeCompare(b.parentName, 'ru')
+    })
+
   function toggleCheckIn(id: string) {
     const now = new Date().toISOString()
     const updated = registrations.map(r => {
@@ -74,6 +87,24 @@ export default function AdminPage() {
     localStorage.setItem('registrations', JSON.stringify(updated))
     setRegistrations(updated)
     if (selectedReg?.id === id) setSelectedReg(null)
+  }
+
+  function exportCSV() {
+    const headers = ['ФИО родителя', 'Имя ребёнка', 'Возраст', 'Телефон', 'Email', 'Дата регистрации', 'Статус', 'Время прихода']
+    const rows = filtered.map(r => [
+      r.parentName, r.childName, r.childAge, r.phone, r.email,
+      new Date(r.createdAt).toLocaleString('ru-RU'),
+      r.checkedIn ? 'ПРИШЁЛ' : 'ОЖИДАЕТСЯ',
+      r.checkedInAt ? new Date(r.checkedInAt).toLocaleTimeString('ru-RU') : '-'
+    ])
+    const csv = [headers, ...rows].map(row => row.map(c => `"${c}"`).join(',')).join('\n')
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `registrations_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   if (!isAuthenticated) {
@@ -113,36 +144,6 @@ export default function AdminPage() {
     )
   }
 
-  function exportCSV() {
-    const headers = ['ФИО родителя', 'Имя ребёнка', 'Возраст', 'Телефон', 'Email', 'Дата регистрации', 'Статус', 'Время прихода']
-    const rows = filtered.map(r => [
-      r.parentName, r.childName, r.childAge, r.phone, r.email,
-      new Date(r.createdAt).toLocaleString('ru-RU'),
-      r.checkedIn ? 'ПРИШЁЛ' : 'ОЖИДАЕТСЯ',
-      r.checkedInAt ? new Date(r.checkedInAt).toLocaleTimeString('ru-RU') : '-'
-    ])
-    const csv = [headers, ...rows].map(row => row.map(c => `"${c}"`).join(',')).join('\n')
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `registrations_${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const filtered = registrations
-    .filter(r =>
-      r.parentName.toLowerCase().includes(search.toLowerCase()) ||
-      r.childName.toLowerCase().includes(search.toLowerCase()) ||
-      r.phone.includes(search) ||
-      r.email.toLowerCase().includes(search.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortBy === 'date') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      return a.parentName.localeCompare(b.parentName, 'ru')
-    })
-
   return (
     <div className="min-h-screen bg-[#F8F9FC]">
       {/* Header */}
@@ -174,24 +175,32 @@ export default function AdminPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
             <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Всего заявок</p>
             <p className="text-4xl font-black text-gray-900">{registrations.length}</p>
           </div>
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm border-l-4 border-l-yellow-400">
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Билеты</p>
+            <p className="text-4xl font-black text-yellow-500">
+              {registrations.filter(r => r.status !== 'waitlist').length}
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm border-l-4 border-l-blue-400">
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Лист ожидания</p>
+            <p className="text-4xl font-black text-blue-500">
+              {registrations.filter(r => r.status === 'waitlist').length}
+            </p>
+          </div>
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
             <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Сегодня</p>
-            <p className="text-4xl font-black text-blue-600">
+            <p className="text-4xl font-black text-emerald-600">
               {registrations.filter(r => {
                 const d = new Date(r.createdAt)
                 const now = new Date()
                 return d.toDateString() === now.toDateString()
               }).length}
             </p>
-          </div>
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Найдено</p>
-            <p className="text-4xl font-black text-emerald-600">{filtered.length}</p>
           </div>
         </div>
 
@@ -270,12 +279,18 @@ export default function AdminPage() {
                         <p className="text-gray-700 text-sm">{reg.childName}, {reg.childAge} лет</p>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider w-fit ${reg.checkedIn ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-400 border border-gray-200'}`}>
-                            {reg.checkedIn ? 'Пришёл' : 'Ожидается'}
-                          </span>
+                        <div className="flex flex-col gap-1">
+                          {reg.status === 'waitlist' ? (
+                            <span className="px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider w-fit bg-blue-100 text-blue-700 border border-blue-200">
+                              Лист ожидания
+                            </span>
+                          ) : (
+                            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider w-fit ${reg.checkedIn ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-yellow-100 text-yellow-700 border border-yellow-200'}`}>
+                              {reg.checkedIn ? 'Пришёл' : 'Билет'}
+                            </span>
+                          )}
                           {reg.checkedInAt && (
-                            <span className="text-[10px] text-gray-400 mt-1 font-bold">
+                            <span className="text-[10px] text-gray-400 font-bold">
                               🕒 {new Date(reg.checkedInAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}
@@ -321,11 +336,23 @@ export default function AdminPage() {
                       <p className="text-gray-400 text-xs">
                         {new Date(reg.createdAt).toLocaleDateString('ru-RU')}
                       </p>
-                      {reg.checkedIn && (
-                        <span className="text-[10px] font-black text-green-600 bg-green-50 px-2 py-1 rounded-lg border border-green-100 uppercase">
-                          ✅ Пришёл {reg.checkedInAt && new Date(reg.checkedInAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      )}
+                      <div className="flex gap-1.5">
+                        {reg.status === 'waitlist' ? (
+                          <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 uppercase">
+                            ⌛ Ожидание
+                          </span>
+                        ) : (
+                          reg.checkedIn ? (
+                            <span className="text-[10px] font-black text-green-600 bg-green-50 px-2 py-1 rounded-lg border border-green-100 uppercase">
+                              ✅ Пришёл
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-black text-yellow-600 bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-100 uppercase">
+                              🎫 Билет
+                            </span>
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -350,6 +377,7 @@ export default function AdminPage() {
               <Field label="Имя ребёнка" value={selectedReg.childName} />
               <Field label="Возраст ребёнка" value={`${selectedReg.childAge} лет`} />
               <Field label="Телефон" value={selectedReg.phone} />
+              <Field label="Тип записи" value={selectedReg.status === 'waitlist' ? '📘 Лист ожидания' : '🎫 Основной список (Билет)'} />
               <Field label="Статус" value={selectedReg.checkedIn ? '✅ Пришёл' : '⌛ Ожидается'} />
               <Field label="Дата регистрации" value={new Date(selectedReg.createdAt).toLocaleString('ru-RU')} />
             </div>
