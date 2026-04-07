@@ -159,27 +159,29 @@ export default function LandingPage() {
       status: isWaitlist ? 'waitlist' : 'ticket',
     }
     
-    // EmailJS Integration with PDF & QR Link
-    const serviceId = 'service_6p0bvbm'
-    const templateId = 'template_2550xos'
-    const publicKey = 'MNrC1SQScGVA_zXJ_'
+    // EmailJS Integration with PDF & QR Link - ONLY IF NOT WAITLIST
+    if (!isWaitlist) {
+      const serviceId = 'service_6p0bvbm'
+      const templateId = 'template_2550xos'
+      const publicKey = 'MNrC1SQScGVA_zXJ_'
 
-    const qrValue = `https://kaliningrad.kiber-one.com/admin?ticket=${newReg.id}`
-    const qrImageLink = `https://quickchart.io/qr?text=${encodeURIComponent(qrValue)}&size=250&margin=1`
+      const qrValue = `https://kaliningrad.kiber-one.com/admin?ticket=${newReg.id}`
+      const qrImageLink = `https://quickchart.io/qr?text=${encodeURIComponent(qrValue)}&size=250&margin=1`
 
-    emailjs.send(serviceId, templateId, {
-      to_name: formData.parentName,
-      to_email: formData.email,
-      child_name: formData.childName,
-      ticket_id: newReg.id,
-      qr_link: qrImageLink, // Передаем ссылку на картинку для письма
-    }, publicKey)
-    .then((res) => {
-      console.log('Email sent successfully!', res.status, res.text);
-    })
-    .catch((err) => {
-      console.error('Email failed to send:', err);
-    });
+      emailjs.send(serviceId, templateId, {
+        to_name: formData.parentName,
+        to_email: formData.email,
+        child_name: formData.childName,
+        ticket_id: newReg.id,
+        qr_link: qrImageLink, // Передаем ссылку на картинку для письма
+      }, publicKey)
+      .then((res) => {
+        console.log('Email sent successfully!', res.status, res.text);
+      })
+      .catch((err) => {
+        console.error('Email failed to send:', err);
+      });
+    }
 
     localStorage.setItem('registrations', JSON.stringify([newReg, ...registrations]))
 
