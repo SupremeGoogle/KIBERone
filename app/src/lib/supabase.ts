@@ -1,13 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables')
+  console.warn('Supabase credentials are missing! Check your environment variables (VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY).')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Create client only if URL is provided to prevent crash
+export const supabase = (supabaseUrl && supabaseAnonKey) 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : (null as any) // Fallback to null to prevent crash
 
 export interface Registration {
   id: string

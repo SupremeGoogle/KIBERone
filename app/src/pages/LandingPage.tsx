@@ -78,6 +78,7 @@ export default function LandingPage() {
   }, [])
 
   async function syncLocalData() {
+    if (!supabase) return
     const localData: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]')
     if (localData.length === 0) return
 
@@ -154,6 +155,11 @@ export default function LandingPage() {
     }
 
     // Get true count from DB
+    if (!supabase) {
+      alert('База данных не подключена')
+      setIsSubmitting(false)
+      return
+    }
     const { count } = await supabase
       .from('registrations')
       .select('*', { count: 'exact', head: true })

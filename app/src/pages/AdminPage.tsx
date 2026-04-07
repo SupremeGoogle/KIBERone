@@ -35,6 +35,11 @@ export default function AdminPage() {
   }, [])
 
   async function loadRegistrations() {
+    if (!supabase) {
+      console.warn('Supabase not initialized')
+      setRegistrations([])
+      return
+    }
     const { data, error } = await supabase
       .from('registrations')
       .select('*')
@@ -74,6 +79,7 @@ export default function AdminPage() {
     })
 
   async function toggleCheckIn(id: string) {
+    if (!supabase) return
     const now = new Date().toISOString()
     const reg = registrations.find(r => r.id === id)
     if (!reg) return
@@ -98,6 +104,7 @@ export default function AdminPage() {
   }
 
   async function deleteRegistration(id: string) {
+    if (!supabase) return
     if (!window.confirm('Удалить эту регистрацию?')) return
     
     const { error } = await supabase
@@ -288,7 +295,7 @@ export default function AdminPage() {
                     <th className="text-left px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Родитель</th>
                     <th className="text-left px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Ребёнок</th>
                     <th className="text-left px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Статус</th>
-                    <th className="text-left px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Телефон</th>
+                    <th className="text-left px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Телефон / Email</th>
                     <th className="text-left px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Дата</th>
                     <th className="text-right px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Действия</th>
                   </tr>
@@ -321,7 +328,8 @@ export default function AdminPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-gray-600 text-sm font-mono">{reg.phone}</p>
+                        <p className="text-gray-900 text-sm font-bold font-mono">{reg.phone}</p>
+                        <p className="text-gray-400 text-xs truncate max-w-[150px]">{reg.email}</p>
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-gray-400 text-sm">{new Date(reg.createdAt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
@@ -354,8 +362,9 @@ export default function AdminPage() {
                     </button>
                   </div>
                   <div className="space-y-1 text-sm">
-                    <p className="text-gray-600">👧 {reg.childName}, {reg.childAge} лет</p>
-                    <p className="text-gray-600">📱 {reg.phone}</p>
+                    <p className="text-gray-600 font-medium">👧 {reg.childName}, {reg.childAge} лет</p>
+                    <p className="text-gray-600 font-bold">📱 {reg.phone}</p>
+                    <p className="text-gray-400 text-xs">✉️ {reg.email}</p>
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
                       <p className="text-gray-400 text-xs">
                         {new Date(reg.createdAt).toLocaleDateString('ru-RU')}
@@ -401,6 +410,7 @@ export default function AdminPage() {
               <Field label="Имя ребёнка" value={selectedReg.childName} />
               <Field label="Возраст ребёнка" value={`${selectedReg.childAge} лет`} />
               <Field label="Телефон" value={selectedReg.phone} />
+              <Field label="Email" value={selectedReg.email} />
               <Field label="Тип записи" value={selectedReg.status === 'waitlist' ? '📘 Лист ожидания' : '🎫 Основной список (Билет)'} />
               <Field label="Статус" value={selectedReg.checkedIn ? '✅ Пришёл' : '⌛ Ожидается'} />
               <Field label="Дата регистрации" value={new Date(selectedReg.createdAt).toLocaleString('ru-RU')} />
