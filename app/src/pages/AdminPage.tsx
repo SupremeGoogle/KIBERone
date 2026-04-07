@@ -1,19 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Scanner } from '@yudiel/react-qr-scanner'
-
-interface Registration {
-  id: string
-  parentName: string
-  childName: string
-  childAge: string
-  phone: string
-  email: string
-  consent: boolean
-  createdAt: string
-  checkedIn?: boolean
-  checkedInAt?: string
-  status?: 'ticket' | 'waitlist'
-}
+import { supabase, mapFromDB } from '../lib/supabase'
+import type { Registration } from '../lib/supabase'
 
 export default function AdminPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
@@ -29,13 +17,37 @@ export default function AdminPage() {
 
   useEffect(() => {
     loadRegistrations()
-    const interval = setInterval(loadRegistrations, 3000)
-    return () => clearInterval(interval)
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'registrations' },
+        () => {
+          loadRegistrations()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
-  function loadRegistrations() {
-    const data: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]')
-    setRegistrations(data)
+  async function loadRegistrations() {
+    const { data, error } = await supabase
+      .from('registrations')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error loading registrations:', error)
+      return
+    }
+    
+    if (data) {
+      setRegistrations(data.map(mapFromDB))
+    }
   }
 
   const handleLogin = (e: React.FormEvent) => {
@@ -61,32 +73,44 @@ export default function AdminPage() {
       return a.parentName.localeCompare(b.parentName, 'ru')
     })
 
-  function toggleCheckIn(id: string) {
+  async function toggleCheckIn(id: string) {
     const now = new Date().toISOString()
-    const updated = registrations.map(r => {
-      if (r.id === id) {
-        const nextState = !r.checkedIn
-        return { 
-          ...r, 
-          checkedIn: nextState,
-          checkedInAt: nextState ? now : undefined 
-        }
+    const reg = registrations.find(r => r.id === id)
+    if (!reg) return
+
+    const nextState = !reg.checkedIn
+    const { error } = await supabase
+      .from('registrations')
+      .update({ 
+        checked_in: nextState,
+        checked_in_at: nextState ? now : null
+      })
+      .eq('id', id)
+
+    if (error) {
+      alert('Ошибка при обновлении статуса')
+    } else {
+      loadRegistrations()
+      if (selectedReg?.id === id) {
+        setSelectedReg(prev => prev ? { ...prev, checkedIn: nextState, checkedInAt: nextState ? now : undefined } : null)
       }
-      return r
-    })
-    localStorage.setItem('registrations', JSON.stringify(updated))
-    setRegistrations(updated)
-    if (selectedReg?.id === id) {
-      setSelectedReg(prev => prev ? { ...prev, checkedIn: !prev.checkedIn, checkedInAt: !prev.checkedIn ? now : undefined } : null)
     }
   }
 
-  function deleteRegistration(id: string) {
+  async function deleteRegistration(id: string) {
     if (!window.confirm('Удалить эту регистрацию?')) return
-    const updated = registrations.filter(r => r.id !== id)
-    localStorage.setItem('registrations', JSON.stringify(updated))
-    setRegistrations(updated)
-    if (selectedReg?.id === id) setSelectedReg(null)
+    
+    const { error } = await supabase
+      .from('registrations')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      alert('Ошибка при удалении')
+    } else {
+      loadRegistrations()
+      if (selectedReg?.id === id) setSelectedReg(null)
+    }
   }
 
   function exportCSV() {

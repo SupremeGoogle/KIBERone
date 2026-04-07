@@ -5,19 +5,8 @@ import { QRCodeSVG } from 'qrcode.react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import emailjs from '@emailjs/browser'
-
-// ============== Types ==============
-interface Registration {
-  id: string
-  parentName: string
-  childName: string
-  childAge: string
-  phone: string
-  email: string
-  consent: boolean
-  createdAt: string
-  status?: 'ticket' | 'waitlist'
-}
+import { supabase, mapToDB } from '../lib/supabase'
+import type { Registration } from '../lib/supabase'
 
 // ============== Phone Validation ==============
 function formatPhone(value: string): string {
@@ -83,6 +72,24 @@ export default function LandingPage() {
   const audienceSection = useInView()
   const formSection = useInView()
 
+  // Recovery & Initial sync
+  useEffect(() => {
+    syncLocalData()
+  }, [])
+
+  async function syncLocalData() {
+    const localData: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]')
+    if (localData.length === 0) return
+
+    for (const reg of localData) {
+      // Check if already in DB
+      const { data } = await supabase.from('registrations').select('id').eq('id', reg.id).single()
+      if (!data) {
+        await supabase.from('registrations').insert(mapToDB(reg))
+      }
+    }
+  }
+
   function handlePhoneChange(value: string) {
     let digits = value.replace(/\D/g, '')
     if (!digits.startsWith('7')) digits = '7' + digits
@@ -131,7 +138,7 @@ export default function LandingPage() {
     }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!validate()) return
 
@@ -146,10 +153,13 @@ export default function LandingPage() {
       return result
     }
 
-    const registrations: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]')
-    
-    // Check for limit - only count those who have 'ticket' status or no status (old ones)
-    const ticketCount = registrations.filter(r => r.status !== 'waitlist').length
+    // Get true count from DB
+    const { count } = await supabase
+      .from('registrations')
+      .select('*', { count: 'exact', head: true })
+      .filter('status', 'neq', 'waitlist')
+
+    const ticketCount = count || 0
     const isWaitlist = ticketCount >= 100
 
     const newReg: Registration = {
@@ -157,6 +167,16 @@ export default function LandingPage() {
       ...formData,
       createdAt: new Date().toISOString(),
       status: isWaitlist ? 'waitlist' : 'ticket',
+    }
+
+    // Save to Supabase
+    const { error: dbError } = await supabase.from('registrations').insert(mapToDB(newReg))
+    
+    if (dbError) {
+      console.error('Database Error:', dbError)
+      alert('Ошибка при сохранении. Попробуйте еще раз.')
+      setIsSubmitting(false)
+      return
     }
     
     // EmailJS Integration with PDF & QR Link - ONLY IF NOT WAITLIST
@@ -183,7 +203,9 @@ export default function LandingPage() {
       });
     }
 
-    localStorage.setItem('registrations', JSON.stringify([newReg, ...registrations]))
+    // Also save to local as backup
+    const currentLocal: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]')
+    localStorage.setItem('registrations', JSON.stringify([newReg, ...currentLocal]))
 
     setTimeout(() => {
       setIsSubmitting(false)
